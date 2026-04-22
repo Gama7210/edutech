@@ -1,0 +1,28 @@
+{
+  "appId": "com.gamino.edutech",
+  "appName": "EduTech",
+  "webDir": "dist",
+  "server": {
+    "url": "https://edutech-56n8wnxve-gama7210s-projects.vercel.app",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#121219",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "Dark",
+      "backgroundColor": "#121219",
+      "overlaysWebView": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#121219",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    }
+  }
+}

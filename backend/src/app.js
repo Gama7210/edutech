@@ -34,7 +34,28 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.set('trust proxy', 1);
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5174', credentials: true }));
+
+// CORS — permite web, Capacitor y apps nativas
+app.use(cors({
+  origin: (origin, callback) => {
+    const permitidos = [
+      process.env.CLIENT_URL,
+      'http://localhost:5174',
+      'http://localhost:4001',
+      'http://localhost',
+      'capacitor://localhost',
+      'https://localhost',
+    ];
+    // Permitir si está en la lista, si no tiene origin (app nativa) o cualquier origen en producción
+    if (!origin || permitidos.includes(origin) || process.env.NODE_ENV === 'production') {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -88,21 +109,20 @@ app.delete('/api/profesores/:id', verificarToken, soloAdmin, eliminarProfesor);
 app.get('/api/categorias', verificarToken, obtenerCategorias);
 
 // ── INSCRIPCIONES Y PROGRESO ──────────────────────────
-app.post('/api/inscripciones',              verificarToken, inscribirse);
-app.get ('/api/mis-cursos',                 verificarToken, misCursos);
-app.post('/api/progreso/leccion',           verificarToken, completarLeccion);
-app.get ('/api/progreso/:curso_id',         verificarToken, obtenerProgreso);
+app.post('/api/inscripciones',           verificarToken, inscribirse);
+app.get ('/api/mis-cursos',              verificarToken, misCursos);
+app.post('/api/progreso/leccion',        verificarToken, completarLeccion);
+app.get ('/api/progreso/:curso_id',      verificarToken, obtenerProgreso);
 
 // ── CUESTIONARIOS ─────────────────────────────────────
-app.get ('/api/cuestionario/:curso_id',     verificarToken, obtenerCuestionario);
-app.post('/api/cuestionario/respuestas',    verificarToken, enviarRespuestas);
+app.get ('/api/cuestionario/:curso_id',  verificarToken, obtenerCuestionario);
+app.post('/api/cuestionario/respuestas', verificarToken, enviarRespuestas);
 
 // ── CALIFICACIONES ────────────────────────────────────
-app.post('/api/calificaciones',             verificarToken, calificarCurso);
+app.post('/api/calificaciones',          verificarToken, calificarCurso);
 
 // ── CERTIFICADOS ──────────────────────────────────────
-app.get('/api/mis-certificados',            verificarToken, misCertificados);
-
+app.get('/api/mis-certificados',         verificarToken, misCertificados);
 
 // ── PREGUNTAS Y OPCIONES ──────────────────────────────
 app.get ('/api/preguntas/:curso_id', verificarToken, async (req, res) => {
@@ -124,7 +144,6 @@ app.post('/api/preguntas', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { curso_id, texto, orden } = req.body;
     const bd = (await import('./config/bd.js')).default;
-    // Eliminar preguntas anteriores si es la primera del lote
     if (orden === 1) {
       const [preg] = await bd.execute('SELECT id FROM preguntas WHERE curso_id = ?', [curso_id]);
       for (const p of preg) {
@@ -141,7 +160,10 @@ app.post('/api/opciones', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { pregunta_id, texto, es_correcta, orden } = req.body;
     const bd = (await import('./config/bd.js')).default;
-    const [r] = await bd.execute('INSERT INTO opciones_respuesta (pregunta_id, texto, es_correcta, orden) VALUES (?, ?, ?, ?)', [pregunta_id, texto, es_correcta ? 1 : 0, orden]);
+    const [r] = await bd.execute(
+      'INSERT INTO opciones_respuesta (pregunta_id, texto, es_correcta, orden) VALUES (?, ?, ?, ?)',
+      [pregunta_id, texto, es_correcta ? 1 : 0, orden]
+    );
     res.status(201).json({ id: r.insertId });
   } catch(e) { res.status(500).json({ mensaje: 'Error al crear opcion' }); }
 });
@@ -155,5 +177,3 @@ app.use((err, req, res, next) => {
 
 const PUERTO = process.env.PORT || 4001;
 app.listen(PUERTO, () => console.log(`🎓 EduTech corriendo en http://localhost:${PUERTO}`));
-
-// NOTA: agregar estas rutas antes del app.listen
