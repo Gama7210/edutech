@@ -5,7 +5,7 @@ Plataforma educativa full stack inspirada en Platzi y Udemy, desarrollada para l
 ---
 
 ## 🌐 Aplicación Web
-👉 **https://edutech-56n8wnxve-gama7210s-projects.vercel.app**
+👉 **https://edutech-mu-six.vercel.app/login**
 
 ## 📱 Descargar App Móvil (Android APK)
 👉 Disponible en la sección **[Releases](https://github.com/Gama7210/edutech/releases)** del repositorio
