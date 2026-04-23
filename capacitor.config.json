@@ -3,7 +3,7 @@
   "appName": "EduTech",
   "webDir": "dist",
   "server": {
-    "url": "https://edutech-56n8wnxve-gama7210s-projects.vercel.app",
+    "url": "https://github.com/Gama7210/edutech/releases/download/v1.0/app-debug.apk",
     "cleartext": false,
     "androidScheme": "https"
   },
