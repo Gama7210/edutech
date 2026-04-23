@@ -82,8 +82,15 @@ function ModalCurso({ curso, profesores, categorias, onCerrar, onGuardado }) {
 
 /* ── Modal Lección ── */
 function ModalLeccion({ leccion, cursoId, totalLecciones, onCerrar, onGuardado }) {
-  const [form, setForm] = useState({ titulo:leccion?.titulo||'', descripcion:leccion?.descripcion||'', orden:leccion?.orden||totalLecciones+1, duracion_seg:leccion?.duracion_seg||120 });
+  const [form, setForm] = useState({
+    titulo: leccion?.titulo||'',
+    descripcion: leccion?.descripcion||'',
+    orden: leccion?.orden||totalLecciones+1,
+    duracion_seg: leccion?.duracion_seg||120,
+    video_url_externa: leccion?.video_url||'',
+  });
   const [archivo, setArchivo] = useState(null);
+  const [modoUrl, setModoUrl] = useState(!!(leccion?.video_url && !leccion.video_url.startsWith('/uploads')));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef(null);
@@ -92,13 +99,21 @@ function ModalLeccion({ leccion, cursoId, totalLecciones, onCerrar, onGuardado }
     e.preventDefault(); setGuardando(true); setError('');
     try {
       const fd = new FormData();
-      fd.append('titulo',form.titulo); fd.append('descripcion',form.descripcion||'');
-      fd.append('orden',form.orden); fd.append('duracion_seg',form.duracion_seg); fd.append('curso_id',cursoId);
-      if (archivo) fd.append('video',archivo);
-      if (leccion) await axios.put(`/api/lecciones/${leccion.id}`,fd,{headers:{'Content-Type':'multipart/form-data'}});
-      else         await axios.post('/api/lecciones',fd,{headers:{'Content-Type':'multipart/form-data'}});
+      fd.append('titulo', form.titulo);
+      fd.append('descripcion', form.descripcion||'');
+      fd.append('orden', form.orden);
+      fd.append('duracion_seg', form.duracion_seg);
+      fd.append('curso_id', cursoId);
+      // Si usa URL externa, la manda como campo de texto
+      if (modoUrl && form.video_url_externa.trim()) {
+        fd.append('video_url_externa', form.video_url_externa.trim());
+      } else if (archivo) {
+        fd.append('video', archivo);
+      }
+      if (leccion) await axios.put(`/api/lecciones/${leccion.id}`, fd, { headers:{ 'Content-Type':'multipart/form-data' } });
+      else         await axios.post('/api/lecciones', fd, { headers:{ 'Content-Type':'multipart/form-data' } });
       onGuardado();
-    } catch(e){ setError(e.response?.data?.mensaje||'Error al guardar'); }
+    } catch(e) { setError(e.response?.data?.mensaje||'Error al guardar'); }
     finally { setGuardando(false); }
   };
 
@@ -117,22 +132,61 @@ function ModalLeccion({ leccion, cursoId, totalLecciones, onCerrar, onGuardado }
             <div><label className="input-label">Duración (seg)</label><input type="number" value={form.duracion_seg} onChange={e=>setForm(f=>({...f,duracion_seg:parseInt(e.target.value)}))} className="input" min={60}/></div>
           </div>
 
-          <div onClick={()=>fileRef.current?.click()} style={{ cursor:'pointer', padding:'16px', border:'2px dashed var(--border2)', borderRadius:12, textAlign:'center', background:'var(--card2)', transition:'border-color .2s' }}
-            onMouseEnter={e=>e.currentTarget.style.borderColor='var(--green)'}
-            onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border2)'}>
-            <p style={{ color:archivo?'var(--green)':'var(--txt3)', fontSize:13 }}>
-              {archivo?`📹 ${archivo.name}`:leccion?.video_url?'📹 Video actual — clic para reemplazar':'📹 Clic para subir video MP4 (máx 500MB)'}
-            </p>
+          {/* Selector tipo de video */}
+          <div>
+            <label className="input-label">Tipo de video</label>
+            <div style={{ display:'flex', gap:10, marginTop:6 }}>
+              <button type="button" onClick={()=>setModoUrl(false)}
+                className={modoUrl ? 'btn btn-ghost btn-sm' : 'btn btn-green btn-sm'} style={{ flex:1 }}>
+                📁 Subir archivo MP4
+              </button>
+              <button type="button" onClick={()=>setModoUrl(true)}
+                className={modoUrl ? 'btn btn-green btn-sm' : 'btn btn-ghost btn-sm'} style={{ flex:1 }}>
+                🔗 Pegar URL
+              </button>
+            </div>
           </div>
-          <input ref={fileRef} type="file" accept="video/*" style={{ display:'none' }} onChange={e=>setArchivo(e.target.files[0]||null)}/>
+
+          {/* Subir archivo */}
+          {!modoUrl && (
+            <>
+              <div onClick={()=>fileRef.current?.click()}
+                style={{ cursor:'pointer', padding:'16px', border:'2px dashed var(--border2)', borderRadius:12, textAlign:'center', background:'var(--card2)', transition:'border-color .2s' }}
+                onMouseEnter={e=>e.currentTarget.style.borderColor='var(--green)'}
+                onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border2)'}>
+                <p style={{ color:archivo?'var(--green)':'var(--txt3)', fontSize:13 }}>
+                  {archivo ? `📹 ${archivo.name}` : leccion?.video_url ? '📹 Video actual — clic para reemplazar' : '📹 Clic para subir video MP4 (máx 1GB)'}
+                </p>
+              </div>
+              <input ref={fileRef} type="file" accept="video/*" style={{ display:'none' }} onChange={e=>setArchivo(e.target.files[0]||null)}/>
+            </>
+          )}
+
+          {/* URL externa */}
+          {modoUrl && (
+            <div>
+              <label className="input-label">URL del video</label>
+              <input
+                value={form.video_url_externa}
+                onChange={e=>setForm(f=>({...f,video_url_externa:e.target.value}))}
+                placeholder="https://drive.google.com/file/d/... o https://tu-servidor.com/video.mp4"
+                className="input"
+                style={{ fontSize:13 }}
+              />
+              <p style={{ fontSize:11, color:'var(--txt3)', marginTop:6 }}>
+                Puedes usar Google Drive, Dropbox, OneDrive o cualquier URL directa de video MP4.
+                En Google Drive: clic derecho → Obtener enlace → Cualquier persona con el enlace → Copiar enlace.
+              </p>
+            </div>
+          )}
 
           {error && <p style={{ color:'var(--red)',fontSize:13 }}>⚠️ {error}</p>}
-          {guardando && <p style={{ color:'var(--green)',fontSize:13 }}>⏳ Subiendo video...</p>}
+          {guardando && <p style={{ color:'var(--green)',fontSize:13 }}>⏳ {modoUrl ? 'Guardando...' : 'Subiendo video, puede tardar...'}</p>}
 
           <div style={{ display:'flex', gap:10 }}>
             <button type="button" onClick={onCerrar} className="btn btn-ghost" style={{ flex:1 }}>Cancelar</button>
             <button type="submit" disabled={guardando} className="btn btn-green" style={{ flex:2 }}>
-              {guardando?'Guardando...':leccion?'💾 Actualizar':'➕ Crear lección'}
+              {guardando ? 'Guardando...' : leccion ? '💾 Actualizar' : '➕ Crear lección'}
             </button>
           </div>
         </form>

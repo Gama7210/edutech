@@ -109,12 +109,13 @@ export async function eliminarCurso(req, res) {
 // ── Lecciones ─────────────────────────────────────────
 export async function crearLeccion(req, res) {
   try {
-    const { curso_id, titulo, descripcion, orden } = req.body;
-    const video_url = req.file ? `/uploads/videos/${req.file.filename}` : null;
+    const { curso_id, titulo, descripcion, orden, video_url_externa } = req.body;
+    // Prioridad: URL externa > archivo subido
+    const video_url = video_url_externa?.trim()
+      ? video_url_externa.trim()
+      : req.file ? `/uploads/videos/${req.file.filename}` : null;
 
-    // Calcular duración del video si se subió
-    let duracion_seg = 0;
-    if (req.file) duracion_seg = parseInt(req.body.duracion_seg) || 120;
+    const duracion_seg = parseInt(req.body.duracion_seg) || 120;
 
     const [r] = await bd.execute(
       'INSERT INTO lecciones (curso_id, titulo, descripcion, video_url, duracion_seg, orden) VALUES (?, ?, ?, ?, ?, ?)',
@@ -137,10 +138,15 @@ export async function crearLeccion(req, res) {
 
 export async function actualizarLeccion(req, res) {
   try {
-    const { titulo, descripcion, orden } = req.body;
-    const video_url = req.file ? `/uploads/videos/${req.file.filename}` : null;
+    const { titulo, descripcion, orden, video_url_externa } = req.body;
+    const duracion_seg = parseInt(req.body.duracion_seg) || undefined;
+    // Prioridad: URL externa > archivo subido
+    const video_url = video_url_externa?.trim()
+      ? video_url_externa.trim()
+      : req.file ? `/uploads/videos/${req.file.filename}` : null;
     let query = 'UPDATE lecciones SET titulo=?, descripcion=?, orden=?';
     let params = [titulo, descripcion || null, orden || 1];
+    if (duracion_seg) { query += ', duracion_seg=?'; params.push(duracion_seg); }
     if (video_url) { query += ', video_url=?'; params.push(video_url); }
     query += ' WHERE id=?'; params.push(req.params.id);
     await bd.execute(query, params);
