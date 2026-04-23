@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexto/ContextoAuth.jsx';
 import TarjetaCurso from '../../componentes/TarjetaCurso.jsx';
 
-const APK_URL = 'https://github.com/Gama7210/edutech/raw/main/edutech-app.apk';
+const APK_URL = 'https://github.com/Gama7210/edutech/releases/download/v1.0/app-debug.apk';
 
 function BannerDescarga() {
   const [cerrado, setCerrado] = useState(false);
