@@ -3,25 +3,29 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 
 function DescargarCertificado({ cursoId }) {
-  const [cargando, setCargando] = useState(false);
-  const descargar = async () => {
-    setCargando(true);
+  const [generando, setGenerando] = useState(false);
+  const descargar = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setGenerando(true);
     try {
       const { data } = await axios.post('/api/certificados/regenerar', { curso_id: cursoId });
-      // Crear link temporal y hacer click para descargar
       const link = document.createElement('a');
       link.href = data.pdf;
-      link.download = 'certificado.pdf';
+      link.download = 'certificado-edutech.pdf';
+      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-    } catch { alert('Error al generar el certificado'); }
-    finally { setCargando(false); }
+      setTimeout(() => document.body.removeChild(link), 100);
+    } catch(err) {
+      console.error(err);
+      alert('Error al generar el certificado. Intenta de nuevo.');
+    } finally { setGenerando(false); }
   };
   return (
-    <button onClick={descargar} disabled={cargando}
+    <button onClick={descargar} disabled={generando}
       className="btn btn-primary btn-sm" style={{ width:'100%' }}>
-      {cargando ? '⏳ Generando...' : '📥 Descargar certificado'}
+      {generando ? '⏳ Generando PDF...' : '📥 Descargar certificado'}
     </button>
   );
 }
