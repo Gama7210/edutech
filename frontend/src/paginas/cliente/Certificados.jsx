@@ -2,49 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
-function DescargarCertificado({ cursoId }) {
-  const [generando, setGenerando] = useState(false);
 
-  const descargar = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Primero intentar desde localStorage (guardado al terminar el cuestionario)
-    const cached = localStorage.getItem(`cert_${cursoId}`);
-    if (cached) {
-      const link = document.createElement('a');
-      link.href = cached;
-      link.download = 'certificado-edutech.pdf';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => document.body.removeChild(link), 100);
-      return;
-    }
-
-    // Si no hay en cache, regenerar desde el servidor
-    setGenerando(true);
-    try {
-      const { data } = await axios.post('/api/certificados/regenerar', { curso_id: cursoId });
-      // Guardar en cache para la próxima vez
-      try { localStorage.setItem(`cert_${cursoId}`, data.pdf); } catch(e) {}
-      const link = document.createElement('a');
-      link.href = data.pdf;
-      link.download = 'certificado-edutech.pdf';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => document.body.removeChild(link), 100);
-    } catch(err) {
-      console.error(err);
-    } finally { setGenerando(false); }
-  };
-
-  return (
-    <button onClick={descargar} disabled={generando}
-      className="btn btn-primary btn-sm" style={{ width:'100%' }}>
-      {generando ? '⏳ Generando...' : '📥 Descargar certificado'}
-    </button>
-  );
-}
 
 export default function Certificados() {
   const [certificados, setCertificados] = useState([]);
@@ -109,12 +67,7 @@ export default function Certificados() {
 
                 <p style={{ color: 'rgba(255,255,255,.3)', fontSize: 10, marginBottom: 14 }}>Folio: {c.folio}</p>
 
-                {c.pdf_url && (
-                  <a href={c.pdf_url} target="_blank" rel="noreferrer"
-                    className="btn btn-primary btn-sm" style={{ width: '100%', textDecoration: 'none', display: 'flex', justifyContent: 'center' }}>
-                    📥 Descargar certificado
-                  </a>
-                )}
+
               </div>
             </motion.div>
           ))}
