@@ -48,14 +48,16 @@ export default function Resultados() {
       {/* Descargas */}
       <div style={{ display:'flex', gap:12, marginBottom:24, flexWrap:'wrap' }}>
         {pdf_resultados && (
-          <a href={pdf_resultados} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ flex:1,textDecoration:'none' }}>
+          <button onClick={()=>{ const w=window.open(); w.document.write(`<iframe src="${pdf_resultados}" style="width:100%;height:100vh;border:none"></iframe>`); }}
+            className="btn btn-ghost" style={{ flex:1 }}>
             📄 Ver resultados (PDF)
-          </a>
+          </button>
         )}
         {certificado_url && (
-          <a href={certificado_url} target="_blank" rel="noreferrer" className="btn btn-green" style={{ flex:1,textDecoration:'none' }}>
-            🏆 Descargar certificado
-          </a>
+          <button onClick={()=>{ const w=window.open(); w.document.write(`<iframe src="${certificado_url}" style="width:100%;height:100vh;border:none"></iframe>`); }}
+            className="btn btn-green" style={{ flex:1 }}>
+            🏆 Ver certificado (PDF)
+          </button>
         )}
       </div>
 

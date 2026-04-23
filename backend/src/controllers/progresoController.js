@@ -222,8 +222,7 @@ export async function enviarRespuestas(req, res) {
       resultados,
     });
 
-    await bd.execute('UPDATE intentos_cuestionario SET pdf_url = ? WHERE id = ?',
-      [pdfResultados, intento.insertId]);
+    // PDF generado como base64 — se envia directo al cliente sin guardar en disco
 
     // Generar certificado si aprueba (calificacion >= 70)
     let certificado_url = null;
@@ -240,8 +239,8 @@ export async function enviarRespuestas(req, res) {
       await bd.execute(`
         INSERT INTO certificados (usuario_id, curso_id, folio, pdf_url, calificacion)
         VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE folio=VALUES(folio), pdf_url=VALUES(pdf_url), calificacion=VALUES(calificacion)
-      `, [req.usuario.id, curso_id, folio, certificado_url, calificacion]);
+        ON DUPLICATE KEY UPDATE folio=VALUES(folio), calificacion=VALUES(calificacion)
+      `, [req.usuario.id, curso_id, folio, 'generado', calificacion]);
     }
 
     res.json({
@@ -297,16 +296,41 @@ export async function misCertificados(req, res) {
   } catch (e) { res.status(500).json({ mensaje: 'Error al obtener certificados' }); }
 }
 
+// ── Regenerar certificado ────────────────────────────
+export async function regenerarCertificado(req, res) {
+  try {
+    const { curso_id } = req.body;
+    const [cert] = await bd.execute(
+      'SELECT c.folio, c.calificacion, c.fecha_emision, cu.nombre AS nombre_curso FROM certificados c JOIN cursos cu ON cu.id = c.curso_id WHERE c.usuario_id = ? AND c.curso_id = ?',
+      [req.usuario.id, curso_id]
+    );
+    if (!cert.length) return res.status(404).json({ mensaje: 'Certificado no encontrado' });
+    const [u] = await bd.execute('SELECT nombre FROM usuarios WHERE id = ?', [req.usuario.id]);
+    const pdf = await generarCertificado({
+      usuario: u[0].nombre,
+      curso: cert[0].nombre_curso,
+      calificacion: cert[0].calificacion,
+      folio: cert[0].folio,
+      fecha: new Date(cert[0].fecha_emision).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }),
+    });
+    res.json({ pdf });
+  } catch (e) {
+    console.error('regenerarCertificado:', e.message);
+    res.status(500).json({ mensaje: 'Error al regenerar certificado' });
+  }
+}
+
 // ── GENERAR PDF DE RESULTADOS ─────────────────────────
 async function generarPDFResultados({ usuario, curso, calificacion, correctas, total, resultados }) {
   return new Promise((resolve, reject) => {
-    const nombre_archivo = `resultados_${uuid()}.pdf`;
-    const ruta = path.join(process.cwd(), 'uploads', 'pdfs', nombre_archivo);
-    fs.mkdirSync(path.dirname(ruta), { recursive: true });
-
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
-    const stream = fs.createWriteStream(ruta);
-    doc.pipe(stream);
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => {
+      const base64 = Buffer.concat(chunks).toString('base64');
+      resolve(`data:application/pdf;base64,${base64}`);
+    });
+    doc.on('error', reject);
 
     // Fondo
     doc.rect(0, 0, 595, 842).fill('#0f172a');
@@ -362,21 +386,20 @@ async function generarPDFResultados({ usuario, curso, calificacion, correctas, t
        .text('EduTech — Plataforma de Educacion en Linea', 50, 800, { align: 'center', width: 495 });
 
     doc.end();
-    stream.on('finish', () => resolve(`/uploads/pdfs/${nombre_archivo}`));
-    stream.on('error', reject);
   });
 }
 
 // ── GENERAR CERTIFICADO PDF ───────────────────────────
 async function generarCertificado({ usuario, curso, calificacion, folio, fecha }) {
   return new Promise((resolve, reject) => {
-    const nombre_archivo = `certificado_${uuid()}.pdf`;
-    const ruta = path.join(process.cwd(), 'uploads', 'pdfs', nombre_archivo);
-    fs.mkdirSync(path.dirname(ruta), { recursive: true });
-
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
-    const stream = fs.createWriteStream(ruta);
-    doc.pipe(stream);
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => {
+      const base64 = Buffer.concat(chunks).toString('base64');
+      resolve(`data:application/pdf;base64,${base64}`);
+    });
+    doc.on('error', reject);
 
     const W = 841, H = 595;
 
@@ -433,7 +456,5 @@ async function generarCertificado({ usuario, curso, calificacion, folio, fecha }
        .text('EduTech', W - 250, 473, { width: 170, align: 'center' });
 
     doc.end();
-    stream.on('finish', () => resolve(`/uploads/pdfs/${nombre_archivo}`));
-    stream.on('error', reject);
   });
 }
