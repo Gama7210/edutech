@@ -24,6 +24,11 @@ export default function Resultados() {
   if (!state) { navegar(`/cursos/${id}`); return null; }
   const { calificacion, correctas, total, aprobado, pdf_resultados, certificado_url, resultados, curso_nombre } = state;
 
+  // Guardar certificado en localStorage para descarga posterior desde Mis Certificados
+  if (certificado_url && id) {
+    try { localStorage.setItem(`cert_${id}`, certificado_url); } catch(e) {}
+  }
+
   const calificar = async () => {
     if (!stars||!comentario.trim()) return;
     setCalificando(true);

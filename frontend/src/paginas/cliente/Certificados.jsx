@@ -4,28 +4,44 @@ import axios from 'axios';
 
 function DescargarCertificado({ cursoId }) {
   const [generando, setGenerando] = useState(false);
+
   const descargar = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Primero intentar desde localStorage (guardado al terminar el cuestionario)
+    const cached = localStorage.getItem(`cert_${cursoId}`);
+    if (cached) {
+      const link = document.createElement('a');
+      link.href = cached;
+      link.download = 'certificado-edutech.pdf';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => document.body.removeChild(link), 100);
+      return;
+    }
+
+    // Si no hay en cache, regenerar desde el servidor
     setGenerando(true);
     try {
       const { data } = await axios.post('/api/certificados/regenerar', { curso_id: cursoId });
+      // Guardar en cache para la próxima vez
+      try { localStorage.setItem(`cert_${cursoId}`, data.pdf); } catch(e) {}
       const link = document.createElement('a');
       link.href = data.pdf;
       link.download = 'certificado-edutech.pdf';
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       setTimeout(() => document.body.removeChild(link), 100);
     } catch(err) {
       console.error(err);
-      alert('Error al generar el certificado. Intenta de nuevo.');
     } finally { setGenerando(false); }
   };
+
   return (
     <button onClick={descargar} disabled={generando}
       className="btn btn-primary btn-sm" style={{ width:'100%' }}>
-      {generando ? '⏳ Generando PDF...' : '📥 Descargar certificado'}
+      {generando ? '⏳ Generando...' : '📥 Descargar certificado'}
     </button>
   );
 }
