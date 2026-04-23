@@ -3,6 +3,15 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import axios from 'axios';
 
+function descargarPDF(dataUrl, nombre) {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = nombre;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export default function Resultados() {
   const { id } = useParams();
   const { state } = useLocation();
@@ -48,15 +57,15 @@ export default function Resultados() {
       {/* Descargas */}
       <div style={{ display:'flex', gap:12, marginBottom:24, flexWrap:'wrap' }}>
         {pdf_resultados && (
-          <button onClick={()=>{ const w=window.open(); w.document.write(`<iframe src="${pdf_resultados}" style="width:100%;height:100vh;border:none"></iframe>`); }}
+          <button onClick={()=>descargarPDF(pdf_resultados,'resultados.pdf')}
             className="btn btn-ghost" style={{ flex:1 }}>
-            📄 Ver resultados (PDF)
+            📄 Descargar resultados (PDF)
           </button>
         )}
         {certificado_url && (
-          <button onClick={()=>{ const w=window.open(); w.document.write(`<iframe src="${certificado_url}" style="width:100%;height:100vh;border:none"></iframe>`); }}
+          <button onClick={()=>descargarPDF(certificado_url,'certificado.pdf')}
             className="btn btn-green" style={{ flex:1 }}>
-            🏆 Ver certificado (PDF)
+            🏆 Descargar certificado (PDF)
           </button>
         )}
       </div>

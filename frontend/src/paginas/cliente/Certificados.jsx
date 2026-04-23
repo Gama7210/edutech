@@ -2,6 +2,30 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
+function DescargarCertificado({ cursoId }) {
+  const [cargando, setCargando] = useState(false);
+  const descargar = async () => {
+    setCargando(true);
+    try {
+      const { data } = await axios.post('/api/certificados/regenerar', { curso_id: cursoId });
+      // Crear link temporal y hacer click para descargar
+      const link = document.createElement('a');
+      link.href = data.pdf;
+      link.download = 'certificado.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch { alert('Error al generar el certificado'); }
+    finally { setCargando(false); }
+  };
+  return (
+    <button onClick={descargar} disabled={cargando}
+      className="btn btn-primary btn-sm" style={{ width:'100%' }}>
+      {cargando ? '⏳ Generando...' : '📥 Descargar certificado'}
+    </button>
+  );
+}
+
 export default function Certificados() {
   const [certificados, setCertificados] = useState([]);
   const [cargando, setCargando] = useState(true);
