@@ -6,6 +6,13 @@ import axios from 'axios';
 // Alumno debe ver al menos el 95% del video para continuar
 const UMBRAL = 95;
 
+// Detectar si la URL es de YouTube y extraer el ID
+function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 export default function Leccion() {
   const { id, leccion_id } = useParams();
   const navegar = useNavigate();
