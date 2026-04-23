@@ -3,11 +3,7 @@
   "appName": "EduTech",
   "webDir": "dist",
   "server": {
-<<<<<<< HEAD
     "url": "https://edutech-mu-six.vercel.app",
-=======
-    "url": "https://edutech-mu-six.vercel.app/login",
->>>>>>> 021798a4604611ab5ef47a957c9e4f44a4d15c41
     "cleartext": false,
     "androidScheme": "https"
   },
