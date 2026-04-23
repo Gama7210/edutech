@@ -3,7 +3,7 @@
   "appName": "EduTech",
   "webDir": "dist",
   "server": {
-    "url": "https://edutech-56n8wnxve-gama7210s-projects.vercel.app",
+    "url": "https://edutech-mu-six.vercel.app/login",
     "cleartext": false,
     "androidScheme": "https"
   },
