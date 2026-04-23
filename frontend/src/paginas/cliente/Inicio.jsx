@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexto/ContextoAuth.jsx';
 import TarjetaCurso from '../../componentes/TarjetaCurso.jsx';
 
-const APK_URL = 'https://github.com/Gama7210/edutech/releases/download/v1.0/app-debug.apk';
+const APK_URL = 'https://github.com/Gama7210/edutech/raw/main/edutech-app.apk';
 
 function BannerDescarga() {
   const [cerrado, setCerrado] = useState(false);
@@ -79,7 +79,8 @@ function BannerDescarga() {
           {/* Botón descarga */}
           <motion.a
             href={APK_URL}
-            download="EduTech.apk"
+            target="_blank"
+            rel="noreferrer"
             onClick={descargar}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: .96 }}

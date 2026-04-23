@@ -3,7 +3,7 @@
   "appName": "EduTech",
   "webDir": "dist",
   "server": {
-    "url": "https://github.com/Gama7210/edutech/releases/download/v1.0/app-debug.apk",
+    "url": "https://edutech-mu-six.vercel.app",
     "cleartext": false,
     "androidScheme": "https"
   },
