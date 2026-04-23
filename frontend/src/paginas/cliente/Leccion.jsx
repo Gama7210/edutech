@@ -122,16 +122,35 @@ export default function Leccion() {
         {/* VIDEO */}
         <div className="video-wrap" style={{ marginBottom: 14, boxShadow: 'var(--shadow2)' }}>
           {leccion.video_url ? (
-            <video
-              ref={videoRef}
-              controls
-              onTimeUpdate={onTimeUpdate}
-              onEnded={marcarCompletada}
-              controlsList="nodownload"
-              style={{ width: '100%', height: '100%' }}
-            >
-              <source src={leccion.video_url} />
-            </video>
+            (() => {
+              const ytId = getYoutubeId(leccion.video_url);
+              if (ytId) {
+                // YouTube — usar iframe
+                return (
+                  <iframe
+                    key={ytId}
+                    src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={leccion.titulo}
+                  />
+                );
+              }
+              // Video normal MP4
+              return (
+                <video
+                  ref={videoRef}
+                  controls
+                  onTimeUpdate={onTimeUpdate}
+                  onEnded={marcarCompletada}
+                  controlsList="nodownload"
+                  style={{ width: '100%', height: '100%' }}
+                >
+                  <source src={leccion.video_url} />
+                </video>
+              );
+            })()
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card2)', flexDirection: 'column', gap: 12 }}>
               <span style={{ fontSize: 48 }}>📹</span>
@@ -140,8 +159,8 @@ export default function Leccion() {
           )}
         </div>
 
-        {/* BARRA PROGRESO VIDEO */}
-        {leccion.video_url && (
+        {/* BARRA PROGRESO VIDEO — solo para MP4, no YouTube */}
+        {leccion.video_url && !getYoutubeId(leccion.video_url) && (
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: completada ? 'var(--green)' : 'var(--txt3)' }}>
@@ -162,6 +181,18 @@ export default function Leccion() {
                 transition: 'width .3s, background .5s',
               }} />
             </div>
+          </div>
+        )}
+
+        {/* Para YouTube — botón manual de completar */}
+        {leccion.video_url && getYoutubeId(leccion.video_url) && !completada && (
+          <div style={{ marginBottom: 18, padding: '14px 16px', background: 'rgba(152,202,63,.06)', border: '1px solid rgba(152,202,63,.2)', borderRadius: 12 }}>
+            <p style={{ fontSize: 13, color: 'var(--txt2)', marginBottom: 10 }}>
+              📺 Ve el video completo de YouTube y luego marca la lección como completada para continuar.
+            </p>
+            <button onClick={marcarCompletada} disabled={completando} className="btn btn-green" style={{ width: '100%' }}>
+              {completando ? 'Registrando...' : '✅ Ya vi el video — marcar como completada'}
+            </button>
           </div>
         )}
 
