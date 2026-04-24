@@ -116,9 +116,9 @@ export default function Leccion() {
       <div>
         {/* Breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 13 }}>
-          <button onClick={() => navegar(`/cursos/${id}`)}
+          <button onClick={() => navegar(-1)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--green)', fontFamily: 'inherit', fontSize: 13, fontWeight: 700 }}>
-            {curso?.nombre}
+            ← {curso?.nombre}
           </button>
           <span style={{ color: 'var(--txt3)' }}>›</span>
           <span style={{ color: 'var(--txt3)' }}>Lección {idx + 1} de {lecciones.length}</span>
@@ -127,12 +127,30 @@ export default function Leccion() {
         <h1 style={{ fontSize: 22, fontWeight: 900, marginBottom: 18, letterSpacing: '-0.02em' }}>{leccion.titulo}</h1>
 
         {/* VIDEO */}
-        <div className="video-wrap" style={{ marginBottom: 14, boxShadow: 'var(--shadow2)' }}>
+        <div className="video-wrap" style={{ marginBottom: 14, boxShadow: 'var(--shadow2)', background: getYoutubeId(leccion.video_url) ? 'var(--card2)' : '#000' }}>
           {leccion.video_url ? (
             (() => {
               const ytId = getYoutubeId(leccion.video_url);
               if (ytId) {
-                // YouTube — usar iframe
+                // Detectar si es app nativa Capacitor
+                const esNativa = window.location.protocol === 'capacitor:' ||
+                  (window.location.protocol === 'http:' && window.location.port === '');
+                if (esNativa) {
+                  // En app movil — abrir YouTube directamente
+                  return (
+                    <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'var(--card2)', gap:16, padding:24 }}>
+                      <div style={{ fontSize:56 }}>▶️</div>
+                      <p style={{ color:'var(--txt2)', fontWeight:700, fontSize:16, textAlign:'center' }}>{leccion.titulo}</p>
+                      <p style={{ color:'var(--txt3)', fontSize:13, textAlign:'center' }}>Este video se reproduce en YouTube</p>
+                      <a href={`https://www.youtube.com/watch?v=${ytId}`}
+                        target="_blank" rel="noreferrer"
+                        style={{ background:'#ff0000', color:'#fff', padding:'14px 28px', borderRadius:12, textDecoration:'none', fontWeight:800, fontSize:15, display:'flex', alignItems:'center', gap:10, boxShadow:'0 4px 16px rgba(255,0,0,.4)' }}>
+                        ▶ Ver en YouTube
+                      </a>
+                    </div>
+                  );
+                }
+                // En web — usar iframe normal
                 return (
                   <iframe
                     key={ytId}
