@@ -12,6 +12,7 @@ export default function Cuestionario() {
   const [respuestas, setRespuestas] = useState({});
   const [actual, setActual] = useState(0);
   const [enviando, setEnviando] = useState(false);
+  const [faseEnvio, setFaseEnvio] = useState(0); // 0=nada 1=enviando 2=validando 3=calculando 4=listo
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
   const [curso, setCurso] = useState(null);
@@ -27,12 +28,92 @@ export default function Cuestionario() {
 
   const enviar = async () => {
     if (Object.keys(respuestas).length<preguntas.length) { setError('Responde todas las preguntas'); return; }
-    setEnviando(true); setError('');
+    setEnviando(true); setFaseEnvio(1); setError('');
     try {
+      // Animacion de fases mientras espera respuesta del servidor
+      const t1 = setTimeout(() => setFaseEnvio(2), 800);
+      const t2 = setTimeout(() => setFaseEnvio(3), 1800);
       const { data } = await axios.post('/api/cuestionario/respuestas', { curso_id:id, respuestas:preguntas.map(p=>({ pregunta_id:p.id, opcion_elegida_id:respuestas[p.id] })) });
-      navegar(`/cursos/${id}/resultados`, { state:{ ...data, curso_nombre:curso?.nombre } });
-    } catch(e) { setError(e.response?.data?.mensaje||'Error al enviar'); setEnviando(false); }
+      clearTimeout(t1); clearTimeout(t2);
+      setFaseEnvio(4);
+      setTimeout(() => navegar(`/cursos/${id}/resultados`, { state:{ ...data, curso_nombre:curso?.nombre } }), 1200);
+    } catch(e) { setError(e.response?.data?.mensaje||'Error al enviar'); setEnviando(false); setFaseEnvio(0); }
   };
+
+  const fases = [
+    { icon: '📤', texto: 'Enviando respuestas...', color: '#60a5fa' },
+    { icon: '🔍', texto: 'Validando respuestas...', color: '#fbbf24' },
+    { icon: '🧮', texto: 'Calculando calificacion...', color: '#a78bfa' },
+    { icon: '✅', texto: '¡Listo!', color: 'var(--green)' },
+  ];
+
+  if (enviando) return (
+    <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', padding:24 }}>
+      <motion.div
+        initial={{ opacity:0, scale:.9 }}
+        animate={{ opacity:1, scale:1 }}
+        style={{ textAlign:'center', maxWidth:400, width:'100%' }}>
+
+        {/* Circulo animado con icono */}
+        <div style={{ position:'relative', width:120, height:120, margin:'0 auto 32px' }}>
+          {/* Anillo giratorio */}
+          <svg style={{ position:'absolute', inset:0, animation:'spin 1.5s linear infinite' }} viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(152,202,63,.15)" strokeWidth="8"/>
+            <circle cx="60" cy="60" r="54" fill="none" stroke="var(--green)" strokeWidth="8"
+              strokeDasharray="80 260" strokeLinecap="round"/>
+          </svg>
+          {/* Segundo anillo */}
+          <svg style={{ position:'absolute', inset:0, animation:'spin 2.5s linear infinite reverse' }} viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(167,139,250,.2)" strokeWidth="4"/>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="#a78bfa" strokeWidth="4"
+              strokeDasharray="40 224" strokeLinecap="round"/>
+          </svg>
+          {/* Icono central */}
+          <AnimatePresence mode="wait">
+            <motion.div key={faseEnvio}
+              initial={{ scale:.5, opacity:0 }}
+              animate={{ scale:1, opacity:1 }}
+              exit={{ scale:.5, opacity:0 }}
+              transition={{ duration:.3 }}
+              style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:40 }}>
+              {faseEnvio > 0 ? fases[faseEnvio-1]?.icon : '📤'}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Texto de fase */}
+        <AnimatePresence mode="wait">
+          <motion.p key={faseEnvio}
+            initial={{ opacity:0, y:10 }}
+            animate={{ opacity:1, y:0 }}
+            exit={{ opacity:0, y:-10 }}
+            transition={{ duration:.3 }}
+            style={{ fontSize:22, fontWeight:800, color: faseEnvio>0 ? fases[faseEnvio-1]?.color : 'var(--green)', marginBottom:8, letterSpacing:'-0.02em' }}>
+            {faseEnvio>0 ? fases[faseEnvio-1]?.texto : 'Procesando...'}
+          </motion.p>
+        </AnimatePresence>
+        <p style={{ color:'var(--txt3)', fontSize:14 }}>Por favor espera un momento</p>
+
+        {/* Pasos */}
+        <div style={{ display:'flex', justifyContent:'center', gap:10, marginTop:32 }}>
+          {fases.map((f,i)=>(
+            <motion.div key={i}
+              animate={{ scale: faseEnvio===i+1 ? 1.3 : 1, opacity: faseEnvio>i ? 1 : 0.3 }}
+              style={{ width:10, height:10, borderRadius:'50%',
+                background: faseEnvio>i ? fases[i].color : 'var(--border2)' }}/>
+          ))}
+        </div>
+
+        {/* Barra de progreso */}
+        <div style={{ marginTop:24, height:4, background:'var(--border2)', borderRadius:99, overflow:'hidden' }}>
+          <motion.div
+            animate={{ width: `${Math.min((faseEnvio/4)*100, 100)}%` }}
+            transition={{ duration:.6, ease:'easeInOut' }}
+            style={{ height:'100%', background:'linear-gradient(90deg,var(--green),#7ac520)', borderRadius:99 }}/>
+        </div>
+      </motion.div>
+    </div>
+  );
 
   if (cargando) return (
     <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
