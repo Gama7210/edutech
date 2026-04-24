@@ -79,19 +79,36 @@ export async function obtenerPerfil(req, res) {
 export async function actualizarPerfil(req, res) {
   try {
     const { nombre, tema } = req.body;
-    const avatar_url = req.file ? `/uploads/avatares/${req.file.filename}` : null;
 
     let query = 'UPDATE usuarios SET nombre = ?, tema = ?';
     let params = [nombre || req.usuario.nombre, tema || 'oscuro'];
 
-    if (avatar_url) { query += ', avatar_url = ?'; params.push(avatar_url); }
+    // Guardar foto como base64 en BD (Render no tiene almacenamiento persistente)
+    if (req.file) {
+      const base64 = `data:${req.file.mimetype};base64,${req.file.buffer?.toString('base64') || ''}`;
+      // Leer el archivo del disco si buffer no está disponible
+      let avatar_data = base64;
+      if (!req.file.buffer) {
+        const fs = await import('fs');
+        const buf = fs.readFileSync(req.file.path);
+        avatar_data = `data:${req.file.mimetype};base64,${buf.toString('base64')}`;
+        // Borrar archivo temporal
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+      }
+      query += ', avatar_url = ?';
+      params.push(avatar_data);
+    }
+
     query += ' WHERE id = ?';
     params.push(req.usuario.id);
 
     await bd.execute(query, params);
     const [u] = await bd.execute('SELECT id, nombre, correo, avatar_url, tema, rol FROM usuarios WHERE id = ?', [req.usuario.id]);
     res.json({ usuario: u[0] });
-  } catch (e) { res.status(500).json({ mensaje: 'Error al actualizar perfil' }); }
+  } catch (e) {
+    console.error('actualizarPerfil:', e.message);
+    res.status(500).json({ mensaje: 'Error al actualizar perfil' });
+  }
 }
 
 // ── Cambiar contrasena ────────────────────────────────

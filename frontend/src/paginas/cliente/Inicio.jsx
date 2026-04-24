@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexto/ContextoAuth.jsx';
 import TarjetaCurso from '../../componentes/TarjetaCurso.jsx';
 
-const APK_URL = 'https://github.com/Gama7210/edutech/releases/download/v1.0/app-debug.apk';
+const APK_URL = 'https://github.com/Gama7210/edutech/raw/main/edutech-app.apk';
 
 function BannerDescarga() {
   const [cerrado, setCerrado] = useState(false);
@@ -128,11 +128,21 @@ export default function Inicio() {
   const [mis, setMis] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  useEffect(()=>{
-    Promise.all([axios.get('/api/cursos'), axios.get('/api/mis-cursos')])
-      .then(([r1,r2])=>{ setCursos(r1.data.cursos||[]); setMis(r2.data.cursos||[]); })
-      .finally(()=>setCargando(false));
-  },[]);
+  const [certs, setCerts] = useState([]);
+
+  const cargarDatos = () => {
+    Promise.all([
+      axios.get('/api/cursos'),
+      axios.get('/api/mis-cursos'),
+      axios.get('/api/mis-certificados'),
+    ]).then(([r1,r2,r3])=>{
+      setCursos(r1.data.cursos||[]);
+      setMis(r2.data.cursos||[]);
+      setCerts(r3.data.certificados||[]);
+    }).finally(()=>setCargando(false));
+  };
+
+  useEffect(()=>{ cargarDatos(); },[]);
 
   const hora = new Date().getHours();
   const saludo = hora<12 ? 'Buenos días' : hora<18 ? 'Buenas tardes' : 'Buenas noches';
@@ -170,7 +180,7 @@ export default function Inicio() {
           { icon:'📚', label:'Inscritos',    val:mis.length,         color:'var(--green)', bg:'rgba(152,202,63,.1)' },
           { icon:'▶️',  label:'En progreso',  val:enProgreso.length,  color:'#fbbf24',     bg:'rgba(234,179,8,.1)' },
           { icon:'✅', label:'Completados',  val:completados.length, color:'#60a5fa',     bg:'rgba(59,130,246,.1)' },
-          { icon:'🏆', label:'Certificados', val:completados.length, color:'#f87171',     bg:'rgba(239,68,68,.1)' },
+          { icon:'🏆', label:'Certificados', val:certs.length, color:'#f87171',     bg:'rgba(239,68,68,.1)' },
         ].map((s,i)=>(
           <motion.div key={i} initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} transition={{delay:.05*i}}
             style={{ background:s.bg, border:`1px solid ${s.color}25`, borderRadius:16, padding:'18px 20px', display:'flex', alignItems:'center', gap:14 }}>

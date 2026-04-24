@@ -144,7 +144,7 @@ export default function Plantilla() {
           </div>
         )}
         <main style={{ flex:1, overflowY:'auto', background:'var(--bg)' }}>
-          <Outlet />
+          <Outlet key={loc.pathname} />
         </main>
       </div>
     </div>
